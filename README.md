@@ -1,2 +1,0 @@
-# sklad-mobile
-sklad-mobile
