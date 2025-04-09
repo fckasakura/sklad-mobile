@@ -1,11 +1,13 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-<<<<<<< Tabnine <<<<<<<
-    "strict": true//-
-    "strict": true,//+
-    "moduleResolution": "node",//+
-    // ... другие настройки//+
->>>>>>> Tabnine >>>>>>>// {"source":"chat"}
+    "strict": true,
+    "moduleResolution": "node",  // 
+    "baseUrl": ".",
+    "paths": {
+      "@api": ["api.ts"],
+      "@screens/*": ["src/screens/*"],
+      "@navigation/*": ["src/navigation/*"]
+    }
   }
 }

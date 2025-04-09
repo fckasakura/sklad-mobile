@@ -10,10 +10,7 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
-<<<<<<< Tabnine <<<<<<<
-import { loginUser } from "../../api";//-
-import { loginUser } from "../utils/api";//+
->>>>>>> Tabnine >>>>>>>// {"source":"chat"}
+import { loginUser } from "../utils/api";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
