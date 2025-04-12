@@ -24,8 +24,11 @@ export default function LoginScreen({ navigation }: any) {
       console.log("Ответ от сервера:", response); // <-- вставь сюда
   
       if (response.accessToken) {
-        await AsyncStorage.setItem("authToken", response.accessToken);
-        navigation.replace("Home");
+        await AsyncStorage.setItem("userEmail", response.user.email);
+await AsyncStorage.setItem("userId", response.user.userId.toString());
+await AsyncStorage.setItem("userType", response.user.userType);
+
+        
       } else {
         Alert.alert("Ошибка", "Сервер не вернул accessToken");
       }

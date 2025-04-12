@@ -22,39 +22,41 @@ export default function StockScreen() {
 
   useEffect(() => {
     const fetchStockItems = async () => {
-        try {
-            const token = await AsyncStorage.getItem("authToken");
-            console.log("🔥 Токен:", token);
-          
-            if (!token) {
-              Alert.alert("Ошибка", "Токен не найден");
-              return;
-            }
-          
-            const res = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/stock-items", {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-          
-            console.log("📦 Ответ статус:", res.status);
-          
-            if (!res.ok) {
-              const err = await res.text();
-              console.log("❌ Ошибка ответа:", err);
-              throw new Error(err);
-            }
-          
-            const data = await res.json();
-            console.log("✅ Остатки:", data);
-            setItems(data);
-          } catch (err: any) {
-            console.log("❗ Catch ошибка:", err.message);
-            Alert.alert("Ошибка", err.message || "Не удалось получить остатки");
-          }
-          
-
-    fetchStockItems();
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        console.log("🔥 Токен:", token);
+  
+        if (!token) {
+          Alert.alert("Ошибка", "Токен не найден");
+          return;
+        }
+  
+        const res = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/stock-items", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        console.log("📦 Ответ статус:", res.status);
+  
+        if (!res.ok) {
+          const err = await res.text();
+          console.log("❌ Ошибка ответа:", err);
+          throw new Error(err);
+        }
+  
+        const data = await res.json();
+        console.log("✅ Остатки:", data);
+        setItems(data);
+      } catch (err: any) {
+        console.log("❗ Catch ошибка:", err.message);
+        Alert.alert("Ошибка", err.message || "Не удалось получить остатки");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchStockItems(); // ✅ ВЫНЕСЕН за пределы объявления
   }, []);
 
   if (loading) {
