@@ -9,7 +9,7 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     try {
-      const response = await loginUser({ email, password });
+      const response = await loginUser( email, password );
 
       if (response.token) {
         await AsyncStorage.setItem("authToken", response.token);
