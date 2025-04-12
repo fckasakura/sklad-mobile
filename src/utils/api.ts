@@ -1,7 +1,8 @@
 const BASE_URL = "https://stoq-web-api.devspace.bafid.app";
 
+// Авторизация (логин)
 export const loginUser = async ({ email, password }: { email: string; password: string }) => {
-  const response = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/auth/login", {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -11,12 +12,13 @@ export const loginUser = async ({ email, password }: { email: string; password: 
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(err || "Ошибка входа");
+    throw new Error(err || "Ошибка авторизации");
   }
 
-  return response.json();
+  return response.json(); // ожидается { token: "..." }
 };
 
+// Регистрация
 export const registerUser = async (data: {
   firstName: string;
   lastName: string;
@@ -34,7 +36,7 @@ export const registerUser = async (data: {
     },
     body: JSON.stringify({
       ...data,
-      countryId: 1,
+      countryId: 1, // фиксировано, иначе API ругается
     }),
   });
 

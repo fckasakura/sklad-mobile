@@ -1,46 +1,81 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Text, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { loginUser } from "../utils/api";
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     try {
-      const response = await loginUser( email, password );
+      setLoading(true);
+      const response = await loginUser({ email, password });
 
       if (response.token) {
         await AsyncStorage.setItem("authToken", response.token);
-        navigation.navigate("Home");
+        navigation.replace("Home");
       } else {
-        Alert.alert("Ошибка", "Неверные учетные данные");
+        Alert.alert("Ошибка", "Токен не получен");
       }
-    } catch (error) {
-      Alert.alert("Ошибка", "Не удалось выполнить вход");
+    } catch (error: any) {
+      console.log("Ошибка входа:", error.message);
+      Alert.alert("Ошибка", error.message || "Не удалось выполнить вход");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Email:</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Вход в систему</Text>
+
       <TextInput
+        style={styles.input}
+        placeholder="Email"
         value={email}
+        autoCapitalize="none"
         onChangeText={setEmail}
-        placeholder="Введите email"
-        style={{ borderWidth: 1, marginBottom: 10 }}
       />
-      <Text>Пароль:</Text>
       <TextInput
+        style={styles.input}
+        placeholder="Пароль"
         value={password}
-        onChangeText={setPassword}
-        placeholder="Введите пароль"
         secureTextEntry
-        style={{ borderWidth: 1, marginBottom: 10 }}
+        onChangeText={setPassword}
       />
-      <Button title="Войти" onPress={handleLogin} />
-      <Button title="Нет аккаунта? Регистрация" onPress={() => navigation.navigate("Register")} />
+
+      <Button title={loading ? "Загрузка..." : "Войти"} onPress={handleLogin} />
+
+      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+        <Text style={styles.link}>Нет аккаунта? Зарегистрироваться</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: "center", padding: 20 },
+  title: { fontSize: 24, marginBottom: 20, textAlign: "center", fontWeight: "bold" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  link: {
+    marginTop: 20,
+    color: "#007bff",
+    textAlign: "center",
+  },
+});
