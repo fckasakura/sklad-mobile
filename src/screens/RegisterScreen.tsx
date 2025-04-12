@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { registerUser } from "../../api";
+import { registerUser } from "../utils/api";
 
 export default function RegisterScreen({ navigation }: any) {
   const [firstName, setFirstName] = useState("");
