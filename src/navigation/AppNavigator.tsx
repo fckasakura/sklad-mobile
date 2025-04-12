@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import HomeScreen from "../screens/HomeScreen";
@@ -14,18 +15,19 @@ export default function AppNavigator() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const interval = setInterval(async () => {
       const token = await AsyncStorage.getItem("authToken");
       setIsAuthenticated(!!token);
-    };
-    checkAuth();
+    }, 500);
+
+    return () => clearInterval(interval);
   }, []);
 
-  if (isAuthenticated === null) return null; // Можно сюда лоадер потом
+  if (isAuthenticated === null) return null;
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isAuthenticated ? "Home" : "Login"}>
+      <Stack.Navigator screenOptions={{ headerTitleAlign: "center" }}>
         {!isAuthenticated ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />

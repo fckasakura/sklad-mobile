@@ -31,7 +31,7 @@ export default function StockScreen() {
           return;
         }
   
-        const res = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/stock-items", {
+        const res = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/stock-items?skip=0&take=25&stockId=1", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -20,10 +20,15 @@ export default function ProfileScreen({ navigation }: any) {
   }, []);
 
   const handleLogout = async () => {
-    await AsyncStorage.multiRemove(["authToken", "refreshToken", "userEmail", "userId", "userType"]);
-    navigation.replace("Login");
+    await AsyncStorage.multiRemove([
+      "authToken",
+      "refreshToken",
+      "userEmail",
+      "userId",
+      "userType",
+    ]);
   };
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Профиль</Text>
