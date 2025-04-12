@@ -4,9 +4,10 @@ import {
   Text,
   TextInput,
   Button,
-  StyleSheet,
   Alert,
+  StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { loginUser } from "../utils/api";
@@ -20,24 +21,26 @@ export default function LoginScreen({ navigation }: any) {
     try {
       setLoading(true);
       const response = await loginUser({ email, password });
-
-      if (response.token) {
-        await AsyncStorage.setItem("authToken", response.token);
+      console.log("Ответ от сервера:", response); // <-- вставь сюда
+  
+      if (response.accessToken) {
+        await AsyncStorage.setItem("authToken", response.accessToken);
         navigation.replace("Home");
       } else {
-        Alert.alert("Ошибка", "Токен не получен");
+        Alert.alert("Ошибка", "Сервер не вернул accessToken");
       }
+      
     } catch (error: any) {
-      console.log("Ошибка входа:", error.message);
       Alert.alert("Ошибка", error.message || "Не удалось выполнить вход");
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Вход в систему</Text>
+      <Text style={styles.title}>Вход в аккаунт</Text>
 
       <TextInput
         style={styles.input}
@@ -46,18 +49,23 @@ export default function LoginScreen({ navigation }: any) {
         autoCapitalize="none"
         onChangeText={setEmail}
       />
+
       <TextInput
         style={styles.input}
         placeholder="Пароль"
-        value={password}
         secureTextEntry
+        value={password}
         onChangeText={setPassword}
       />
 
-      <Button title={loading ? "Загрузка..." : "Войти"} onPress={handleLogin} />
+      {loading ? (
+        <ActivityIndicator size="large" color="#007bff" />
+      ) : (
+        <Button title="Войти" onPress={handleLogin} />
+      )}
 
       <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-        <Text style={styles.link}>Нет аккаунта? Зарегистрироваться</Text>
+        <Text style={styles.link}>Нет аккаунта? Зарегистрируйся</Text>
       </TouchableOpacity>
     </View>
   );
@@ -65,7 +73,7 @@ export default function LoginScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20 },
-  title: { fontSize: 24, marginBottom: 20, textAlign: "center", fontWeight: "bold" },
+  title: { fontSize: 24, textAlign: "center", marginBottom: 20, fontWeight: "bold" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",

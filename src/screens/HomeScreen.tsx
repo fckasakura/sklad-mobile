@@ -1,15 +1,23 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Button } from "react-native";
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Главное меню</Text>
+
+      <View style={styles.buttonWrapper}>
+        <Button
+          title="Остатки товаров"
+          onPress={() => navigation.navigate("Stock")}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  text: { fontSize: 24 },
+  text: { fontSize: 24, marginBottom: 20 },
+  buttonWrapper: { width: "80%" },
 });
