@@ -21,31 +21,127 @@ export default function StockScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStockItems = async () => {
+    const prepareAndLoadStock = async () => {
       try {
         const token = await AsyncStorage.getItem("authToken");
-        console.log("🔥 Токен:", token);
-  
-        if (!token) {
-          Alert.alert("Ошибка", "Токен не найден");
-          return;
-        }
-  
-        const res = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/stock-items?skip=0&take=25&stockId=1", {
+        if (!token) return;
+
+        // Шаг 1: Получаем список профилей
+        const resProfiles = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-  
-        console.log("📦 Ответ статус:", res.status);
-  
-        if (!res.ok) {
-          const err = await res.text();
-          console.log("❌ Ошибка ответа:", err);
+
+        let profiles = await resProfiles.json();
+
+        if (!profiles || !profiles.length) {
+          console.log("⚠️ Нет профилей. Создаём новый...");
+
+          const resCompanies = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/companies", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const companies = await resCompanies.json();
+          if (!companies || !companies.length) {
+            console.log("❌ Компании не найдены");
+            return;
+          }
+
+          const companyId = companies[0].companyId;
+          console.log("🏢 Берём компанию:", companyId);
+
+          const resCreate = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ companyId }),
+          });
+
+          if (!resCreate.ok) {
+            const err = await resCreate.text();
+            console.log("❌ Ошибка создания профиля:", err);
+            return;
+          }
+
+          console.log("✅ Профиль создан");
+
+// Попробуем прочитать ответ
+let createdProfile;
+try {
+  createdProfile = await resCreate.json();
+  profiles = [createdProfile];
+} catch {
+  console.log("⚠️ Сервер не вернул JSON. Попробуем заново получить профили...");
+
+  const resProfilesRetry = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  profiles = await resProfilesRetry.json();
+}
+
+        }
+
+        const profileId = profiles[0].profileEmployeeId;
+        console.log("✅ Активируем профиль:", profileId);
+
+        const resActivate = await fetch(
+          `https://stoq-web-api.devspace.bafid.app/api/v1/default-profile-employees/profile-employees/${profileId}/select`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!resActivate.ok) {
+          const err = await resActivate.text();
+          console.log("❌ Не удалось активировать профиль:", err);
+          return;
+        }
+
+        console.log("✅ Профиль активирован!");
+
+        // Шаг 2: Получаем склады
+        const resStocks = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/stocks/under-my-management", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const stocks = await resStocks.json();
+        if (!stocks || !stocks.length) {
+          console.log("❌ Склады не найдены");
+          return;
+        }
+
+        const stockId = stocks[0].stockId;
+        console.log("📦 Берём склад:", stockId);
+
+        // Шаг 3: Загружаем остатки
+        const resItems = await fetch(
+          `https://stoq-web-api.devspace.bafid.app/api/v1/stock-items?skip=0&take=25&stockId=${stockId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!resItems.ok) {
+          const err = await resItems.text();
           throw new Error(err);
         }
-  
-        const data = await res.json();
+
+        const data = await resItems.json();
         console.log("✅ Остатки:", data);
         setItems(data);
       } catch (err: any) {
@@ -55,8 +151,8 @@ export default function StockScreen() {
         setLoading(false);
       }
     };
-  
-    fetchStockItems(); // ✅ ВЫНЕСЕН за пределы объявления
+
+    prepareAndLoadStock();
   }, []);
 
   if (loading) {
