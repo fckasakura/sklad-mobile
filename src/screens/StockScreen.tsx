@@ -27,22 +27,28 @@ export default function StockScreen() {
         if (!token) return;
 
         // Шаг 1: Получаем список профилей
-        const resProfiles = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const resProfiles = await fetch(
+          "https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         let profiles = await resProfiles.json();
 
         if (!profiles || !profiles.length) {
           console.log("⚠️ Нет профилей. Создаём новый...");
 
-          const resCompanies = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/companies", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const resCompanies = await fetch(
+            "https://stoq-web-api.devspace.bafid.app/api/v1/companies",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
 
           const companies = await resCompanies.json();
           if (!companies || !companies.length) {
@@ -53,14 +59,17 @@ export default function StockScreen() {
           const companyId = companies[0].companyId;
           console.log("🏢 Берём компанию:", companyId);
 
-          const resCreate = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ companyId }),
-          });
+          const resCreate = await fetch(
+            "https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ companyId }),
+            }
+          );
 
           if (!resCreate.ok) {
             const err = await resCreate.text();
@@ -75,12 +84,17 @@ export default function StockScreen() {
             createdProfile = await resCreate.json();
             profiles = [createdProfile];
           } catch {
-            console.log("⚠️ Сервер не вернул JSON. Пробуем повторно загрузить профили...");
-            const resProfilesRetry = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
+            console.log(
+              "⚠️ Сервер не вернул JSON. Пробуем повторно загрузить профили..."
+            );
+            const resProfilesRetry = await fetch(
+              "https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees",
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
             profiles = await resProfilesRetry.json();
           }
         }
@@ -107,11 +121,14 @@ export default function StockScreen() {
         console.log("✅ Профиль активирован!");
 
         // Шаг 2: Получаем склады
-        const resStocks = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/stocks/under-my-management", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const resStocks = await fetch(
+          "https://stoq-web-api.devspace.bafid.app/api/v1/stocks/under-my-management",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         const stocks = await resStocks.json();
         if (!stocks || !stocks.length) {
