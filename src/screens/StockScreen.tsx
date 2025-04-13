@@ -132,6 +132,7 @@ const stockId = parseInt(stockIdStr);
         }
 
         const stockId = stocks[0].stockId;
+        
         console.log("📦 Берём склад:", stockId);
 
         // Загружаем остатки — сначала получаем текст
