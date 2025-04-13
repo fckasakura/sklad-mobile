@@ -69,7 +69,20 @@ export default function StockScreen() {
           }
 
           console.log("✅ Профиль создан");
-          profiles = [await resCreate.json()];
+
+          let createdProfile;
+          try {
+            createdProfile = await resCreate.json();
+            profiles = [createdProfile];
+          } catch {
+            console.log("⚠️ Сервер не вернул JSON. Пробуем повторно загрузить профили...");
+            const resProfilesRetry = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            profiles = await resProfilesRetry.json();
+          }
         }
 
         const profileId = profiles[0].profileEmployeeId;
