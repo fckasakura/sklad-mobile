@@ -26,7 +26,7 @@ export default function StockScreen() {
         const token = await AsyncStorage.getItem("authToken");
         if (!token) return;
 
-        // Шаг 1: Получаем список профилей
+        // Получение профилей
         const resProfiles = await fetch(
           "https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees",
           {
@@ -79,14 +79,11 @@ export default function StockScreen() {
 
           console.log("✅ Профиль создан");
 
-          let createdProfile;
           try {
-            createdProfile = await resCreate.json();
+            const createdProfile = await resCreate.json();
             profiles = [createdProfile];
           } catch {
-            console.log(
-              "⚠️ Сервер не вернул JSON. Пробуем повторно загрузить профили..."
-            );
+            console.log("⚠️ Сервер не вернул JSON. Пробуем повторно загрузить профили...");
             const resProfilesRetry = await fetch(
               "https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees",
               {
@@ -120,15 +117,13 @@ export default function StockScreen() {
 
         console.log("✅ Профиль активирован!");
 
-        // Шаг 2: Получаем склады
-        const resStocks = await fetch(
-          "https://stoq-web-api.devspace.bafid.app/api/v1/stocks/under-my-management",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // Получаем склады
+        const stockIdStr = await AsyncStorage.getItem("selectedStockId");
+if (!stockIdStr) {
+  Alert.alert("Ошибка", "Склад не выбран. Зайдите в настройки.");
+  return;
+}
+const stockId = parseInt(stockIdStr);
 
         const stocks = await resStocks.json();
         if (!stocks || !stocks.length) {
@@ -139,7 +134,7 @@ export default function StockScreen() {
         const stockId = stocks[0].stockId;
         console.log("📦 Берём склад:", stockId);
 
-        // Шаг 3: Загружаем остатки
+        // Загружаем остатки — сначала получаем текст
         const resItems = await fetch(
           `https://stoq-web-api.devspace.bafid.app/api/v1/stock-items?skip=0&take=25&stockId=${stockId}`,
           {
@@ -149,14 +144,16 @@ export default function StockScreen() {
           }
         );
 
-        if (!resItems.ok) {
-          const err = await resItems.text();
-          throw new Error(err);
+        const rawText = await resItems.text();
+        console.log("📦 Ответ сервера:", rawText);
+
+        if (!rawText || rawText.trim() === "") {
+          throw new Error("Сервер вернул пустой ответ");
         }
 
-        const data = await resItems.json();
-        console.log("✅ Остатки:", data);
+        const data = JSON.parse(rawText);
         setItems(data);
+        console.log("✅ Остатки загружены");
       } catch (err: any) {
         console.log("❗ Catch ошибка:", err.message);
         Alert.alert("Ошибка", err.message || "Не удалось получить остатки");
