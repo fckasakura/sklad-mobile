@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AddStockItemScreen from "../screens/AddStockItemScreen";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -35,11 +36,12 @@ export default function AppNavigator() {
           </>
         ) : (
           <>
+          
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Stock" component={StockScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
-
+            <Stack.Screen name="AddItem" component={AddStockItemScreen} />
           </>
         )}
       </Stack.Navigator>

@@ -1,8 +1,5 @@
-import { Button } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import React, { useLayoutEffect } from "react";
 import { View, Text, StyleSheet, Button } from "react-native";
-
 
 export default function HomeScreen({ navigation }: any) {
   useLayoutEffect(() => {
@@ -18,7 +15,17 @@ export default function HomeScreen({ navigation }: any) {
       <Text style={styles.text}>Главное меню</Text>
 
       <View style={styles.buttonWrapper}>
-        <Button title="Остатки товаров" onPress={() => navigation.navigate("Stock")} />
+        <Button
+          title="Остатки товаров"
+          onPress={() => navigation.navigate("Stock")}
+        />
+      </View>
+
+      <View style={styles.buttonWrapper}>
+        <Button
+          title="Добавить товар"
+          onPress={() => navigation.navigate("AddStockItem")}
+        />
       </View>
     </View>
   );
@@ -27,5 +34,5 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
   text: { fontSize: 24, marginBottom: 20 },
-  buttonWrapper: { width: "80%" },
+  buttonWrapper: { width: "80%", marginVertical: 10 },
 });
