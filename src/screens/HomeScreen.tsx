@@ -19,9 +19,10 @@ export default function HomeScreen({ navigation }: any) {
     { label: "Выдача", screen: "Issue" },
     { label: "Склад", screen: "StockItems" },
     { label: "Поиск товара", screen: "Search" },
+    { label: "Склады", screen: "Stocks" }, // 👈 вот эта строка — новая
     { label: "Настройки", screen: "Profile" },
-    { label: "Склады", screen: "StockScreen" },
   ];
+  
 
   return (
     <View style={styles.container}>
