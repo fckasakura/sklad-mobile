@@ -16,16 +16,11 @@ export default function HomeScreen({ navigation }: any) {
 
       <View style={styles.buttonWrapper}>
         <Button
-          title="Остатки товаров"
-          onPress={() => navigation.navigate("Stock")}
+          title="Перейти в профиль"
+          onPress={() => navigation.navigate("Profile")}
         />
-      </View>
+        <Button title="📦 Все товары" onPress={() => navigation.navigate("StockItems")} />
 
-      <View style={styles.buttonWrapper}>
-        <Button
-          title="Добавить товар"
-          onPress={() => navigation.navigate("AddStockItem")}
-        />
       </View>
     </View>
   );
@@ -34,5 +29,5 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
   text: { fontSize: 24, marginBottom: 20 },
-  buttonWrapper: { width: "80%", marginVertical: 10 },
+  buttonWrapper: { width: "80%" },
 });

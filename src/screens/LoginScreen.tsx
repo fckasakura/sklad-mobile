@@ -6,102 +6,40 @@ import {
   Button,
   StyleSheet,
   Alert,
-  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const BASE_URL = "https://89fe7478329a133b.mokky.dev/Users";
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    setLoading(true);
+    if (!email || !password) {
+      Alert.alert("Ошибка", "Введите логин и пароль");
+      return;
+    }
+
     try {
-      const res = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login: email, password }),
-      });
+      const res = await fetch(BASE_URL);
+      const users = await res.json();
 
-      const raw = await res.text();
-      if (!res.ok) throw new Error(raw);
-
-      const data = JSON.parse(raw);
-      const token = data.accessToken;
-      await AsyncStorage.setItem("authToken", token);
-
-      // ✅ Профиль
-      const resProfile = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      let profiles = await resProfile.json();
-
-      if (!profiles || profiles.length === 0) {
-        const resCompanies = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/companies", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const companies = await resCompanies.json();
-        const companyId = companies[0].companyId;
-
-        const resCreate = await fetch("https://stoq-web-api.devspace.bafid.app/api/v1/profile-employees", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ companyId }),
-        });
-
-        const created = await resCreate.json();
-        profiles = [created];
-      }
-
-      const profileId = profiles[0].profileEmployeeId;
-
-      await fetch(
-        `https://stoq-web-api.devspace.bafid.app/api/v1/default-profile-employees/profile-employees/${profileId}/select`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const user = users.find(
+        (u: any) => u.email === email && u.password === password
       );
 
-      // ✅ Склад
-      const resStocks = await fetch(
-        "https://stoq-web-api.devspace.bafid.app/api/v1/stocks/under-my-management",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const stocks = await resStocks.json();
-
-      if (stocks.length > 0) {
-        await AsyncStorage.setItem("selectedStockId", stocks[0].stockId.toString());
-      } else {
-        const resCreateStock = await fetch(
-          "https://stoq-web-api.devspace.bafid.app/api/v1/stocks",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ name: "Авто-склад" }),
-          }
-        );
-
-        const created = await resCreateStock.json();
-        await AsyncStorage.setItem("selectedStockId", created.stockId.toString());
+      if (!user) {
+        Alert.alert("Ошибка", "Неверный логин или пароль");
+        return;
       }
 
+      await AsyncStorage.setItem("authToken", "mock-token");
+      await AsyncStorage.setItem("userEmail", user.email);
       navigation.replace("Home");
     } catch (err: any) {
-      console.log("❌ Ошибка входа:", err.message);
-      Alert.alert("Ошибка", err.message || "Не удалось выполнить вход");
-    } finally {
-      setLoading(false);
+      Alert.alert("Ошибка", err.message || "Произошла ошибка");
     }
   };
 
@@ -112,36 +50,40 @@ export default function LoginScreen({ navigation }: any) {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
-        autoCapitalize="none"
       />
-
       <TextInput
         style={styles.input}
         placeholder="Пароль"
+        secureTextEntry
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
       />
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#007bff" />
-      ) : (
-        <Button title="Войти" onPress={handleLogin} />
-      )}
+      <Button title="Войти" onPress={handleLogin} />
+
+      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+        <Text style={styles.link}>Нет аккаунта? Зарегистрироваться</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "center" },
-  title: { fontSize: 24, marginBottom: 20, textAlign: "center" },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 30, textAlign: "center" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 10,
+    padding: 12,
     marginBottom: 15,
-    borderRadius: 5,
+    borderRadius: 8,
+  },
+  link: {
+    marginTop: 20,
+    color: "#007bff",
+    textAlign: "center",
   },
 });
