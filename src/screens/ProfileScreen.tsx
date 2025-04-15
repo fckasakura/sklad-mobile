@@ -2,149 +2,134 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  Button,
   StyleSheet,
+  Button,
   Alert,
-  ActivityIndicator,
   TextInput,
+  FlatList,
+  TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Picker } from "@react-native-picker/picker";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../types"; 
 
 interface Stock {
   id: number;
   name: string;
 }
 
-// Тип для навигации
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+interface User {
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+}
 
-export default function ProfileScreen() {
-  const navigation = useNavigation<NavigationProp>(); // Типизированное useNavigation
+export default function ProfileScreen({ navigation }: any) {
+  const [user, setUser] = useState<User | null>(null);
   const [stocks, setStocks] = useState<Stock[]>([]);
-  const [selectedStock, setSelectedStock] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [selectedStockId, setSelectedStockId] = useState<string | null>(null);
   const [newStockName, setNewStockName] = useState("");
 
   useEffect(() => {
-    loadStocks();
+    loadData();
   }, []);
 
-  const loadStocks = async () => {
+  const loadData = async () => {
+    const token = await AsyncStorage.getItem("authToken");
+    const storedStockId = await AsyncStorage.getItem("selectedStockId");
+    setSelectedStockId(storedStockId);
+
     try {
-      const res = await fetch("https://89fe7478329a133b.mokky.dev/Stocks");
-      const data: Stock[] = await res.json();
+      const resUser = await fetch("https://89fe7478329a133b.mokky.dev/Users");
+      const users = await resUser.json();
+      const currentUser = users.find((u: any) => `Bearer ${token}`.includes(u.email)); // моковая проверка
+      setUser(currentUser);
 
-      if (!data || data.length === 0) {
-        throw new Error("Склады не найдены");
-      }
-
+      const resStocks = await fetch("https://89fe7478329a133b.mokky.dev/Stocks");
+      const data = await resStocks.json();
       setStocks(data);
-
-      const savedStockId = await AsyncStorage.getItem("selectedStockId");
-      if (savedStockId) {
-        setSelectedStock(parseInt(savedStockId));
-      }
-    } catch (err: any) {
-      Alert.alert("Ошибка", err.message || "Не удалось загрузить склады");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      Alert.alert("Ошибка", "Не удалось загрузить профиль и склады");
     }
   };
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem("authToken");
-    await AsyncStorage.removeItem("selectedStockId");
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Login" as keyof RootStackParamList }], // Явная типизация
-    });
-  };
-
-  const handleStockChange = async (value: number) => {
-    setSelectedStock(value);
-    await AsyncStorage.setItem("selectedStockId", value.toString());
-    Alert.alert("✅ Склад выбран", "Теперь товар будет добавляться в выбранный склад.");
+  const handleSelectStock = async (id: number) => {
+    await AsyncStorage.setItem("selectedStockId", id.toString());
+    setSelectedStockId(id.toString());
+    Alert.alert("✅ Успешно", "Склад выбран");
   };
 
   const handleCreateStock = async () => {
     if (!newStockName.trim()) {
-      Alert.alert("Введите название склада");
+      Alert.alert("Ошибка", "Введите название склада");
       return;
     }
 
     try {
       const res = await fetch("https://89fe7478329a133b.mokky.dev/Stocks", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newStockName }),
-        });
+      });
 
-      if (!res.ok) {
-        throw new Error("Не удалось создать склад");
-      }
+      if (!res.ok) throw new Error("Ошибка при создании склада");
 
-      const created: Stock = await res.json();
-      setStocks((prev) => [...prev, created]);
-      setSelectedStock(created.id);
+      const created = await res.json();
       await AsyncStorage.setItem("selectedStockId", created.id.toString());
+      setSelectedStockId(created.id.toString());
       setNewStockName("");
-      setCreating(false);
-      Alert.alert("✅ Готово", "Склад успешно создан и выбран!");
+      loadData();
     } catch (err: any) {
-      Alert.alert("Ошибка", err.message || "Ошибка при создании склада");
+      Alert.alert("Ошибка", err.message || "Не удалось создать склад");
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
+  const logout = async () => {
+    await AsyncStorage.multiRemove(["authToken", "selectedStockId"]);
+    navigation.reset({ index: 0, routes: [{ name: "Login" as never }] }); // 👈 safe cast
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Профиль</Text>
 
-      <Text style={styles.label}>Выбрать склад:</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={selectedStock ?? undefined}
-          onValueChange={handleStockChange}
-          style={styles.picker}
-        >
-          {stocks.map((stock) => (
-            <Picker.Item key={stock.id} label={stock.name} value={stock.id} />
-          ))}
-        </Picker>
-      </View>
-
-      {creating ? (
+      {user ? (
         <>
-          <Text style={styles.label}>Название склада:</Text>
-          <TextInput
-            value={newStockName}
-            onChangeText={setNewStockName}
-            placeholder="Введите название"
-            style={styles.input}
-          />
-          <Button title="Создать" onPress={handleCreateStock} />
-          <Button title="Отмена" color="gray" onPress={() => setCreating(false)} />
+          <Text style={styles.info}>Email: {user.email}</Text>
+          {user.firstName && <Text style={styles.info}>Имя: {user.firstName}</Text>}
+          {user.lastName && <Text style={styles.info}>Фамилия: {user.lastName}</Text>}
         </>
       ) : (
-        <Button title="➕ Создать новый склад" onPress={() => setCreating(true)} />
+        <Text style={styles.info}>Загрузка данных пользователя...</Text>
       )}
 
-      <View style={{ marginTop: 30 }}>
-        <Button title="Выйти из аккаунта" onPress={handleLogout} color="#ff3b30" />
+      <Text style={styles.subtitle}>Выбор склада:</Text>
+
+      <FlatList
+        data={stocks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.stockItem,
+              item.id.toString() === selectedStockId && styles.selectedStock,
+            ]}
+            onPress={() => handleSelectStock(item.id)}
+          >
+            <Text style={styles.stockText}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Новый склад"
+        value={newStockName}
+        onChangeText={setNewStockName}
+      />
+      <Button title="Создать склад" onPress={handleCreateStock} />
+
+      <View style={{ marginTop: 20 }}>
+        <Button title="Выйти из аккаунта" color="red" onPress={logout} />
       </View>
     </View>
   );
@@ -152,21 +137,27 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-  label: { fontSize: 16, marginBottom: 5 },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  picker: { height: 50 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
+  subtitle: { fontSize: 18, fontWeight: "bold", marginTop: 24, marginBottom: 8 },
+  info: { fontSize: 16, marginBottom: 4 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 8,
     padding: 10,
-    marginBottom: 15,
+    marginVertical: 10,
+    borderRadius: 5,
+  },
+  stockItem: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#007AFF",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  selectedStock: {
+    backgroundColor: "#007AFF",
+  },
+  stockText: {
+    color: "#000",
   },
 });

@@ -1,3 +1,5 @@
+// src/navigation/types.ts
+
 export type RootStackParamList = {
     Login: undefined;
     Register: undefined;
@@ -7,9 +9,9 @@ export type RootStackParamList = {
     StockItems: undefined;
     Stock: undefined;
     Movements: undefined;
-    Issue: undefined;
+    Issue: { item?: any }; // 👈 или точнее: { item: StockItem }
     Search: undefined;
-    RequestItem: undefined;
+    RequestItem: { item: any };
     IssueRequests: undefined;
     EditStockItem: { item: any };
     AddStockItem: undefined;
