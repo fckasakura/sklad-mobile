@@ -11,14 +11,19 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../types"; 
 
 interface Stock {
   id: number;
   name: string;
 }
 
+// Тип для навигации
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function ProfileScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>(); // Типизированное useNavigation
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [selectedStock, setSelectedStock] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +61,7 @@ export default function ProfileScreen() {
     await AsyncStorage.removeItem("selectedStockId");
     navigation.reset({
       index: 0,
-      routes: [{ name: "Login" }],
+      routes: [{ name: "Login" as keyof RootStackParamList }], // Явная типизация
     });
   };
 
@@ -79,7 +84,7 @@ export default function ProfileScreen() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ name: newStockName }),
-      });
+        });
 
       if (!res.ok) {
         throw new Error("Не удалось создать склад");
