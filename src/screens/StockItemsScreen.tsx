@@ -6,105 +6,84 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  TextInput,
   TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface StockItem {
   id: number;
-  productId: number;
-  stockId: number;
+  name: string;
   quantity: number;
+  productId: number;
   isDamaged: boolean;
+  stockId: number;
+  stockName?: string;
+  price?: number;
 }
 
-export default function StockItemsScreen() {
+export default function StockScreen({ navigation }: any) {
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("https://89fe7478329a133b.mokky.dev/StockItems");
-      const data = await res.json();
-      setItems(data);
-    } catch (err) {
-      Alert.alert("Ошибка", "Не удалось загрузить товары");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchItems();
+    const loadStockItems = async () => {
+      try {
+        const stockId = await AsyncStorage.getItem("selectedStockId");
+        if (!stockId) {
+          Alert.alert("Ошибка", "Склад не выбран. Зайдите в профиль.");
+          return;
+        }
+
+        const res = await fetch("https://89fe7478329a133b.mokky.dev/StockItems");
+        const data: StockItem[] = await res.json();
+        const filtered = data.filter((item) => item.stockId === parseInt(stockId));
+        setItems(filtered);
+      } catch (err: any) {
+        Alert.alert("Ошибка", err.message || "Не удалось загрузить остатки");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStockItems();
   }, []);
-
-  const handleDelete = async (id: number) => {
-    try {
-      await fetch(`https://89fe7478329a133b.mokky.dev/StockItems/${id}`, {
-        method: "DELETE",
-      });
-      setItems((prev) => prev.filter((item) => item.id !== id));
-    } catch {
-      Alert.alert("Ошибка", "Не удалось удалить товар");
-    }
-  };
-
-  const filteredItems = items.filter(
-    (item) =>
-      item.id.toString().includes(search) ||
-      item.productId.toString().includes(search)
-  );
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#007bff" />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={styles.title}>Остатки товаров</Text>
-
-      <TextInput
-        placeholder="Поиск по ID товара или ProductID"
-        value={search}
-        onChangeText={setSearch}
-        style={styles.input}
-        placeholderTextColor="#999"
-      />
-
+    <View style={{ flex: 1 }}>
       <FlatList
-        data={filteredItems}
+        data={items}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 40 }}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>ID: {item.id}</Text>
-            <Text style={styles.cardText}>ID продукта: {item.productId}</Text>
-            <Text style={styles.cardText}>Количество: {item.quantity}</Text>
-            <Text style={styles.cardText}>
-              Повреждён: {item.isDamaged ? "Да" : "Нет"}
-            </Text>
-
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() =>
-                Alert.alert("Удалить", "Удалить этот товар?", [
-                  { text: "Отмена", style: "cancel" },
-                  { text: "Удалить", style: "destructive", onPress: () => handleDelete(item.id) },
-                ])
-              }
-            >
-              <Text style={styles.deleteText}>Удалить</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("EditStockItem", { item })}
+          >
+            <View style={styles.item}>
+              <Text style={styles.title}>{item.name || "Без названия"}</Text>
+              <Text>ID продукта: {item.productId}</Text>
+              <Text>Цена: {item.price || 0} ₽</Text>
+              <Text>Количество: {item.quantity}</Text>
+              <Text>Склад: {item.stockName || "неизвестно"}</Text>
+              <Text>Повреждён: {item.isDamaged ? "Да" : "Нет"}</Text>
+            </View>
+          </TouchableOpacity>
         )}
+        contentContainerStyle={styles.list}
       />
+
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => navigation.navigate("AddStockItem")}
+      >
+        <Text style={styles.addButtonText}>➕ Добавить товар</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -115,49 +94,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  list: {
+    padding: 20,
+    paddingBottom: 100, // чтобы не перекрывалось кнопкой
+  },
+  item: {
+    backgroundColor: "#f2f2f2",
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 10,
+  },
   title: {
-    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    color: "#000",
-  },
-  card: {
-    backgroundColor: "#f9f9f9",
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 6,
-  },
-  cardText: {
-    fontSize: 14,
+    fontSize: 16,
     marginBottom: 4,
-    color: "#444",
   },
-  deleteButton: {
-    marginTop: 10,
-    backgroundColor: "#ff3b30",
-    padding: 10,
-    borderRadius: 8,
+  addButton: {
+    backgroundColor: "#007AFF",
+    padding: 16,
+    borderRadius: 12,
+    margin: 20,
     alignItems: "center",
   },
-  deleteText: {
-    color: "#fff",
-    fontWeight: "bold",
+  addButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "600",
   },
 });

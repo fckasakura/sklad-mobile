@@ -1,73 +1,57 @@
-import React, { useState, useEffect } from "react";
+// screens/EditStockItemScreen.tsx
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
-  Switch,
   StyleSheet,
   Button,
   Alert,
+  Switch,
 } from "react-native";
 
 export default function EditStockItemScreen({ route, navigation }: any) {
   const { item } = route.params;
-  const [productId, setProductId] = useState(item.productId.toString());
   const [quantity, setQuantity] = useState(item.quantity.toString());
   const [isDamaged, setIsDamaged] = useState(item.isDamaged);
 
   const handleSave = async () => {
     try {
-      const body = {
-        productId: parseInt(productId),
-        quantity: parseInt(quantity),
-        isDamaged,
-      };
+      const res = await fetch(`https://89fe7478329a133b.mokky.dev/StockItems/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quantity: parseInt(quantity),
+          isDamaged,
+        }),
+      });
 
-      const res = await fetch(
-        `https://89fe7478329a133b.mokky.dev/StockItems/${item.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
+      if (!res.ok) throw new Error("Ошибка при обновлении");
 
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
-      }
-
-      Alert.alert("✅ Успешно", "Товар обновлён");
+      Alert.alert("✅ Обновлено", "Товар успешно обновлён");
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert("Ошибка", err.message || "Не удалось обновить товар");
+      Alert.alert("Ошибка", err.message);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>ID продукта:</Text>
-      <TextInput
-        style={styles.input}
-        value={productId}
-        onChangeText={setProductId}
-        keyboardType="numeric"
-      />
-
+      <Text style={styles.label}>Товар: {item.name}</Text>
       <Text style={styles.label}>Количество:</Text>
       <TextInput
         style={styles.input}
+        keyboardType="numeric"
         value={quantity}
         onChangeText={setQuantity}
-        keyboardType="numeric"
       />
 
       <View style={styles.switchRow}>
-        <Text>Повреждён?</Text>
+        <Text>Повреждённый?</Text>
         <Switch value={isDamaged} onValueChange={setIsDamaged} />
       </View>
 
-      <Button title="Сохранить" onPress={handleSave} />
+      <Button title="Сохранить изменения" onPress={handleSave} />
     </View>
   );
 }
@@ -85,7 +69,7 @@ const styles = StyleSheet.create({
   switchRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
     marginBottom: 20,
+    gap: 10,
   },
 });

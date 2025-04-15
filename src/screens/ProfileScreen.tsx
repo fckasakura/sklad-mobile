@@ -2,177 +2,144 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
   Button,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
   TextInput,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
+import { useNavigation } from "@react-navigation/native";
 
-const API_BASE = "https://89fe7478329a133b.mokky.dev";
+interface Stock {
+  id: number;
+  name: string;
+}
 
-export default function ProfileScreen({ navigation }: any) {
-  const [user, setUser] = useState<any>(null);
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>();
-  const [profileName, setProfileName] = useState<string>("");
+export default function ProfileScreen() {
+  const navigation = useNavigation();
+  const [stocks, setStocks] = useState<Stock[]>([]);
+  const [selectedStock, setSelectedStock] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newStockName, setNewStockName] = useState("");
 
-  const load = async () => {
+  useEffect(() => {
+    loadStocks();
+  }, []);
+
+  const loadStocks = async () => {
     try {
-      const savedUserId = await AsyncStorage.getItem("userId");
-      if (!savedUserId) throw new Error("Нет userId");
+      const res = await fetch("https://89fe7478329a133b.mokky.dev/Stocks");
+      const data: Stock[] = await res.json();
 
-      // Загружаем пользователя
-      const resUser = await fetch(`${API_BASE}/Users/${savedUserId}`);
-      const dataUser = await resUser.json();
-      setUser(dataUser);
+      if (!data || data.length === 0) {
+        throw new Error("Склады не найдены");
+      }
 
-      // Загружаем профили
-      const resProfiles = await fetch(`${API_BASE}/Profiles?userId=${savedUserId}`);
-      const dataProfiles = await resProfiles.json();
-      setProfiles(dataProfiles);
+      setStocks(data);
 
-      const savedProfileId = await AsyncStorage.getItem("profileId");
-      if (savedProfileId) {
-        setSelectedProfileId(savedProfileId);
-        const current = dataProfiles.find((p: any) => String(p.id) === savedProfileId);
-        if (current) setProfileName(current.name);
+      const savedStockId = await AsyncStorage.getItem("selectedStockId");
+      if (savedStockId) {
+        setSelectedStock(parseInt(savedStockId));
       }
     } catch (err: any) {
-      Alert.alert("Ошибка", err.message || "Не удалось загрузить данные");
+      Alert.alert("Ошибка", err.message || "Не удалось загрузить склады");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  const handleCreateProfile = async () => {
-    try {
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId) return;
-
-      const res = await fetch(`${API_BASE}/Profiles`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: Number(userId),
-          name: `Профиль #${profiles.length + 1}`,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Ошибка при создании профиля");
-
-      Alert.alert("✅ Профиль создан");
-      load();
-    } catch (err: any) {
-      Alert.alert("Ошибка", err.message);
-    }
-  };
-
-  const handleUpdateProfile = async () => {
-    try {
-      if (!selectedProfileId) return;
-      const res = await fetch(`${API_BASE}/Profiles/${selectedProfileId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: profileName }),
-      });
-
-      if (!res.ok) throw new Error("Ошибка при обновлении профиля");
-
-      Alert.alert("✅ Имя профиля обновлено");
-      load();
-    } catch (err: any) {
-      Alert.alert("Ошибка", err.message);
-    }
-  };
-
-  const handleDeleteProfile = async () => {
-    try {
-      if (!selectedProfileId) return;
-
-      await AsyncStorage.removeItem("profileId");
-
-      const res = await fetch(`${API_BASE}/Profiles/${selectedProfileId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Ошибка при удалении");
-
-      Alert.alert("✅ Профиль удалён");
-      setSelectedProfileId(undefined);
-      setProfileName("");
-      load();
-    } catch (err: any) {
-      Alert.alert("Ошибка", err.message);
-    }
-  };
-
   const handleLogout = async () => {
-    await AsyncStorage.clear();
-    navigation.replace("Login");
+    await AsyncStorage.removeItem("authToken");
+    await AsyncStorage.removeItem("selectedStockId");
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Login" }],
+    });
   };
 
-  const handleSelectProfile = async (val: string) => {
-    setSelectedProfileId(val);
-    await AsyncStorage.setItem("profileId", val);
-    const profile = profiles.find((p) => String(p.id) === val);
-    setProfileName(profile?.name || "");
+  const handleStockChange = async (value: number) => {
+    setSelectedStock(value);
+    await AsyncStorage.setItem("selectedStockId", value.toString());
+    Alert.alert("✅ Склад выбран", "Теперь товар будет добавляться в выбранный склад.");
+  };
+
+  const handleCreateStock = async () => {
+    if (!newStockName.trim()) {
+      Alert.alert("Введите название склада");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://89fe7478329a133b.mokky.dev/Stocks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newStockName }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Не удалось создать склад");
+      }
+
+      const created: Stock = await res.json();
+      setStocks((prev) => [...prev, created]);
+      setSelectedStock(created.id);
+      await AsyncStorage.setItem("selectedStockId", created.id.toString());
+      setNewStockName("");
+      setCreating(false);
+      Alert.alert("✅ Готово", "Склад успешно создан и выбран!");
+    } catch (err: any) {
+      Alert.alert("Ошибка", err.message || "Ошибка при создании склада");
+    }
   };
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Профиль</Text>
-      <Text style={styles.label}>Email: {user?.email || "неизвестен"}</Text>
+      <Text style={styles.title}>Профиль</Text>
 
-      <Text style={styles.label}>Ваши профили:</Text>
+      <Text style={styles.label}>Выбрать склад:</Text>
       <View style={styles.pickerWrapper}>
         <Picker
-          selectedValue={selectedProfileId}
-          onValueChange={(val) => handleSelectProfile(val)}
+          selectedValue={selectedStock ?? undefined}
+          onValueChange={handleStockChange}
+          style={styles.picker}
         >
-          <Picker.Item label="-- Выбрать профиль --" value={undefined} />
-          {profiles.map((p) => (
-            <Picker.Item key={p.id} label={p.name} value={String(p.id)} />
+          {stocks.map((stock) => (
+            <Picker.Item key={stock.id} label={stock.name} value={stock.id} />
           ))}
         </Picker>
       </View>
 
-      {selectedProfileId && (
+      {creating ? (
         <>
-          <Text style={styles.label}>Редактировать имя профиля:</Text>
+          <Text style={styles.label}>Название склада:</Text>
           <TextInput
+            value={newStockName}
+            onChangeText={setNewStockName}
+            placeholder="Введите название"
             style={styles.input}
-            value={profileName}
-            onChangeText={setProfileName}
           />
-          <Button title="💾 Сохранить" onPress={handleUpdateProfile} />
-          <View style={{ marginTop: 10 }}>
-            <Button title="🗑️ Удалить профиль" color="#FF3B30" onPress={handleDeleteProfile} />
-          </View>
+          <Button title="Создать" onPress={handleCreateStock} />
+          <Button title="Отмена" color="gray" onPress={() => setCreating(false)} />
         </>
+      ) : (
+        <Button title="➕ Создать новый склад" onPress={() => setCreating(true)} />
       )}
 
       <View style={{ marginTop: 30 }}>
-        <Button title="➕ Создать профиль" onPress={handleCreateProfile} />
-      </View>
-
-      <View style={{ marginTop: 40 }}>
-        <Button title="🚪 Выйти из аккаунта" color="#888" onPress={handleLogout} />
+        <Button title="Выйти из аккаунта" onPress={handleLogout} color="#ff3b30" />
       </View>
     </View>
   );
@@ -181,20 +148,20 @@ export default function ProfileScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
-  label: { fontSize: 16, marginTop: 10 },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  label: { fontSize: 16, marginBottom: 5 },
   pickerWrapper: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     marginBottom: 20,
-    backgroundColor: "#f2f2f2",
   },
+  picker: { height: 50 },
   input: {
     borderWidth: 1,
-    borderColor: "#aaa",
+    borderColor: "#ccc",
     borderRadius: 8,
     padding: 10,
-    marginBottom: 10,
+    marginBottom: 15,
   },
 });
