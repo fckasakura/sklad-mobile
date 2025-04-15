@@ -1,12 +1,20 @@
 import React, { useLayoutEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function HomeScreen({ navigation }: any) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-          <Text style={styles.headerBtn}>👤</Text>
+          <Ionicons name="person-circle-outline" size={28} color="#007AFF" style={{ marginRight: 12 }} />
         </TouchableOpacity>
       ),
       title: "Главное меню",
@@ -14,39 +22,52 @@ export default function HomeScreen({ navigation }: any) {
   }, [navigation]);
 
   const buttons = [
-    { label: "Перемещения", screen: "Movements" },
-    { label: "Выдача", screen: "Issue" },
-    { label: "Склад", screen: "StockItems" },
-    { label: "Поиск товара", screen: "Search" },
-    { label: "Запрос на выдачу", screen: "RequestItem" },
-    { label: "Настройки", screen: "Profile" },
+    { label: "Перемещения", screen: "Movements", icon: "swap-horizontal" },
+    { label: "Выдача", screen: "Issue", icon: "exit-outline" },
+    { label: "Склад", screen: "StockItems", icon: "cube-outline" },
+    { label: "Поиск товара", screen: "Search", icon: "search-outline" },
+    { label: "Настройки", screen: "Profile", icon: "settings-outline" },
   ];
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       {buttons.map((btn, index) => (
         <TouchableOpacity
           key={index}
           style={styles.button}
           onPress={() => navigation.navigate(btn.screen)}
         >
+          <Ionicons name={btn.icon as any} size={32} color="#fff" />
           <Text style={styles.buttonText}>{btn.label}</Text>
         </TouchableOpacity>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
+  container: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+  },
   button: {
     backgroundColor: "#007AFF",
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    width: "80%",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-start",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    width: "100%",
+    borderRadius: 12,
+    gap: 16,
+    elevation: 3,
   },
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "600" },
-  headerBtn: { fontSize: 22, marginRight: 12 },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
 });

@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Button,
   Alert,
   TextInput,
   FlatList,
   TouchableOpacity,
+  Button,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -35,20 +35,21 @@ export default function ProfileScreen({ navigation }: any) {
 
   const loadData = async () => {
     const token = await AsyncStorage.getItem("authToken");
+    const email = await AsyncStorage.getItem("userEmail");
     const storedStockId = await AsyncStorage.getItem("selectedStockId");
     setSelectedStockId(storedStockId);
 
     try {
       const resUser = await fetch("https://89fe7478329a133b.mokky.dev/Users");
       const users = await resUser.json();
-      const currentUser = users.find((u: any) => `Bearer ${token}`.includes(u.email)); // моковая проверка
+      const currentUser = users.find((u: any) => u.email === email);
       setUser(currentUser);
 
       const resStocks = await fetch("https://89fe7478329a133b.mokky.dev/Stocks");
       const data = await resStocks.json();
       setStocks(data);
     } catch (err) {
-      Alert.alert("Ошибка", "Не удалось загрузить профиль и склады");
+      Alert.alert("Ошибка", "Не удалось загрузить данные");
     }
   };
 
@@ -84,8 +85,8 @@ export default function ProfileScreen({ navigation }: any) {
   };
 
   const logout = async () => {
-    await AsyncStorage.multiRemove(["authToken", "selectedStockId"]);
-    navigation.reset({ index: 0, routes: [{ name: "Login" as never }] }); // 👈 safe cast
+    await AsyncStorage.multiRemove(["authToken", "userEmail", "selectedStockId"]);
+    navigation.reset({ index: 0, routes: [{ name: "Login" as never }] });
   };
 
   return (
@@ -93,17 +94,16 @@ export default function ProfileScreen({ navigation }: any) {
       <Text style={styles.title}>Профиль</Text>
 
       {user ? (
-        <>
-          <Text style={styles.info}>Email: {user.email}</Text>
-          {user.firstName && <Text style={styles.info}>Имя: {user.firstName}</Text>}
-          {user.lastName && <Text style={styles.info}>Фамилия: {user.lastName}</Text>}
-        </>
+        <View style={styles.card}>
+          <Text style={styles.info}>📧 Email: {user.email}</Text>
+          {user.firstName && <Text style={styles.info}>👤 Имя: {user.firstName}</Text>}
+          {user.lastName && <Text style={styles.info}>👥 Фамилия: {user.lastName}</Text>}
+        </View>
       ) : (
-        <Text style={styles.info}>Загрузка данных пользователя...</Text>
+        <Text style={styles.info}>Загрузка...</Text>
       )}
 
-      <Text style={styles.subtitle}>Выбор склада:</Text>
-
+      <Text style={styles.subtitle}>Ваши склады:</Text>
       <FlatList
         data={stocks}
         keyExtractor={(item) => item.id.toString()}
@@ -122,13 +122,13 @@ export default function ProfileScreen({ navigation }: any) {
 
       <TextInput
         style={styles.input}
-        placeholder="Новый склад"
+        placeholder="Название нового склада"
         value={newStockName}
         onChangeText={setNewStockName}
       />
       <Button title="Создать склад" onPress={handleCreateStock} />
 
-      <View style={{ marginTop: 20 }}>
+      <View style={{ marginTop: 30 }}>
         <Button title="Выйти из аккаунта" color="red" onPress={logout} />
       </View>
     </View>
@@ -137,15 +137,21 @@ export default function ProfileScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
-  subtitle: { fontSize: 18, fontWeight: "bold", marginTop: 24, marginBottom: 8 },
-  info: { fontSize: 16, marginBottom: 4 },
+  title: { fontSize: 26, fontWeight: "bold", marginBottom: 16 },
+  subtitle: { fontSize: 20, fontWeight: "bold", marginTop: 24, marginBottom: 12 },
+  info: { fontSize: 16, marginBottom: 6 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 10,
-    marginVertical: 10,
-    borderRadius: 5,
+    marginTop: 12,
+    borderRadius: 6,
+  },
+  card: {
+    backgroundColor: "#f2f2f2",
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 12,
   },
   stockItem: {
     padding: 12,

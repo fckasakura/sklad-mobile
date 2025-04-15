@@ -5,113 +5,140 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  FlatList,
   Button,
+  TouchableOpacity,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE = "https://89fe7478329a133b.mokky.dev";
+interface StockItem {
+  id: number;
+  name: string;
+  stockId: number;
+}
+
+interface Stock {
+  id: number;
+  name: string;
+}
 
 export default function MovementsScreen() {
-  const [items, setItems] = useState<any[]>([]);
-  const [stocks, setStocks] = useState<any[]>([]);
-  const [selectedItemId, setSelectedItemId] = useState<string | undefined>();
-  const [selectedStockId, setSelectedStockId] = useState<string | undefined>();
+  const [items, setItems] = useState<StockItem[]>([]);
+  const [stocks, setStocks] = useState<Stock[]>([]);
+  const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    const fetchAll = async () => {
       try {
-        const [itemsRes, stocksRes] = await Promise.all([
-          fetch(`${API_BASE}/StockItems`).then((res) => res.json()),
-          fetch(`${API_BASE}/Stocks`).then((res) => res.json()),
-        ]);
-        setItems(itemsRes);
-        setStocks(stocksRes);
-      } catch (err: any) {
-        Alert.alert("Ошибка", err.message || "Не удалось загрузить данные");
+        const stockId = await AsyncStorage.getItem("selectedStockId");
+        const resItems = await fetch("https://89fe7478329a133b.mokky.dev/StockItems");
+        const resStocks = await fetch("https://89fe7478329a133b.mokky.dev/Stocks");
+
+        const dataItems = await resItems.json();
+        const dataStocks = await resStocks.json();
+
+        const current = dataItems.filter((i: any) => i.stockId === Number(stockId));
+        setItems(current);
+        setStocks(dataStocks.filter((s: Stock) => s.id !== Number(stockId)));
+      } catch (e) {
+        Alert.alert("Ошибка", "Не удалось загрузить данные");
       } finally {
         setLoading(false);
       }
     };
 
-    load();
+    fetchAll();
   }, []);
 
-  const handleMove = async () => {
-    if (!selectedItemId || !selectedStockId) {
-      Alert.alert("⚠️", "Выберите товар и целевой склад");
-      return;
-    }
+  const handleMove = async (targetStockId: number) => {
+    if (!selectedItem) return;
 
     try {
-      const res = await fetch(`${API_BASE}/StockItems/${selectedItemId}`, {
+      const res = await fetch(`https://89fe7478329a133b.mokky.dev/StockItems/${selectedItem.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stockId: Number(selectedStockId) }),
+        body: JSON.stringify({ stockId: targetStockId }),
       });
 
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
-      }
+      if (!res.ok) throw new Error("Ошибка перемещения");
 
-      Alert.alert("✅ Успешно", "Товар перемещён");
+      Alert.alert("✅", "Товар перемещён");
+      setItems((prev) => prev.filter((i) => i.id !== selectedItem.id));
+      setSelectedItem(null);
     } catch (err: any) {
-      Alert.alert("Ошибка", err.message || "Не удалось переместить товар");
+      Alert.alert("Ошибка", err.message);
     }
   };
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Выберите товар:</Text>
-      <Picker
-        selectedValue={selectedItemId}
-        onValueChange={(val) => setSelectedItemId(val)}
-        style={styles.picker}
-      >
-        <Picker.Item label="-- Товар --" value={undefined} />
-        {items.map((item) => (
-          <Picker.Item
-            key={item.id}
-            label={`${item.name || "Без названия"} (ID ${item.id})`}
-            value={String(item.id)}
+      <Text style={styles.title}>Выберите товар для перемещения:</Text>
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.item,
+              selectedItem?.id === item.id && styles.selectedItem,
+            ]}
+            onPress={() => setSelectedItem(item)}
+          >
+            <Text>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {selectedItem && (
+        <>
+          <Text style={styles.title}>Куда переместить:</Text>
+          <FlatList
+            data={stocks}
+            keyExtractor={(s) => s.id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.stockBtn}
+                onPress={() => handleMove(item.id)}
+              >
+                <Text style={styles.stockText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
           />
-        ))}
-      </Picker>
-
-      <Text style={styles.label}>Куда переместить:</Text>
-      <Picker
-        selectedValue={selectedStockId}
-        onValueChange={(val) => setSelectedStockId(val)}
-        style={styles.picker}
-      >
-        <Picker.Item label="-- Склад --" value={undefined} />
-        {stocks.map((stock) => (
-          <Picker.Item key={stock.id} label={stock.name} value={String(stock.id)} />
-        ))}
-      </Picker>
-
-      <Button title="Переместить" onPress={handleMove} />
+        </>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 16 },
-  label: { fontSize: 16, fontWeight: "bold" },
-  picker: {
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 8 },
+  item: {
+    padding: 12,
     borderWidth: 1,
-    borderColor: "#ccc",
     borderRadius: 8,
-    backgroundColor: "#f2f2f2",
+    borderColor: "#ccc",
+    marginBottom: 6,
   },
+  selectedItem: {
+    borderColor: "#007AFF",
+    backgroundColor: "#e0f0ff",
+  },
+  stockBtn: {
+    padding: 10,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+    marginVertical: 4,
+  },
+  stockText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
