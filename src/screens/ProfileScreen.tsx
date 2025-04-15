@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Button,
+  TextInput,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
@@ -16,6 +17,7 @@ export default function ProfileScreen({ navigation }: any) {
   const [user, setUser] = useState<any>(null);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>();
+  const [profileName, setProfileName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -33,11 +35,14 @@ export default function ProfileScreen({ navigation }: any) {
       const dataProfiles = await resProfiles.json();
       setProfiles(dataProfiles);
 
-      // Сохраняем выбранный профиль
       const savedProfileId = await AsyncStorage.getItem("profileId");
-      if (savedProfileId) setSelectedProfileId(savedProfileId);
+      if (savedProfileId) {
+        setSelectedProfileId(savedProfileId);
+        const current = dataProfiles.find((p: any) => String(p.id) === savedProfileId);
+        if (current) setProfileName(current.name);
+      }
     } catch (err: any) {
-      Alert.alert("Ошибка", err.message || "Не удалось загрузить профиль");
+      Alert.alert("Ошибка", err.message || "Не удалось загрузить данные");
     } finally {
       setLoading(false);
     }
@@ -57,14 +62,11 @@ export default function ProfileScreen({ navigation }: any) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: Number(userId),
-          name: "Новый профиль",
+          name: `Профиль #${profiles.length + 1}`,
         }),
       });
 
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
-      }
+      if (!res.ok) throw new Error("Ошибка при создании профиля");
 
       Alert.alert("✅ Профиль создан");
       load();
@@ -73,14 +75,55 @@ export default function ProfileScreen({ navigation }: any) {
     }
   };
 
-  const handleSelectProfile = async (val: string) => {
-    setSelectedProfileId(val);
-    await AsyncStorage.setItem("profileId", val);
+  const handleUpdateProfile = async () => {
+    try {
+      if (!selectedProfileId) return;
+      const res = await fetch(`${API_BASE}/Profiles/${selectedProfileId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: profileName }),
+      });
+
+      if (!res.ok) throw new Error("Ошибка при обновлении профиля");
+
+      Alert.alert("✅ Имя профиля обновлено");
+      load();
+    } catch (err: any) {
+      Alert.alert("Ошибка", err.message);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    try {
+      if (!selectedProfileId) return;
+
+      await AsyncStorage.removeItem("profileId");
+
+      const res = await fetch(`${API_BASE}/Profiles/${selectedProfileId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Ошибка при удалении");
+
+      Alert.alert("✅ Профиль удалён");
+      setSelectedProfileId(undefined);
+      setProfileName("");
+      load();
+    } catch (err: any) {
+      Alert.alert("Ошибка", err.message);
+    }
   };
 
   const handleLogout = async () => {
     await AsyncStorage.clear();
     navigation.replace("Login");
+  };
+
+  const handleSelectProfile = async (val: string) => {
+    setSelectedProfileId(val);
+    await AsyncStorage.setItem("profileId", val);
+    const profile = profiles.find((p) => String(p.id) === val);
+    setProfileName(profile?.name || "");
   };
 
   if (loading) {
@@ -96,7 +139,7 @@ export default function ProfileScreen({ navigation }: any) {
       <Text style={styles.header}>Профиль</Text>
       <Text style={styles.label}>Email: {user?.email || "неизвестен"}</Text>
 
-      <Text style={styles.label}>Выбор профиля:</Text>
+      <Text style={styles.label}>Ваши профили:</Text>
       <View style={styles.pickerWrapper}>
         <Picker
           selectedValue={selectedProfileId}
@@ -109,12 +152,27 @@ export default function ProfileScreen({ navigation }: any) {
         </Picker>
       </View>
 
-      {profiles.length === 0 && (
-        <Button title="Создать профиль" onPress={handleCreateProfile} />
+      {selectedProfileId && (
+        <>
+          <Text style={styles.label}>Редактировать имя профиля:</Text>
+          <TextInput
+            style={styles.input}
+            value={profileName}
+            onChangeText={setProfileName}
+          />
+          <Button title="💾 Сохранить" onPress={handleUpdateProfile} />
+          <View style={{ marginTop: 10 }}>
+            <Button title="🗑️ Удалить профиль" color="#FF3B30" onPress={handleDeleteProfile} />
+          </View>
+        </>
       )}
 
       <View style={{ marginTop: 30 }}>
-        <Button title="Выйти из аккаунта" color="#FF3B30" onPress={handleLogout} />
+        <Button title="➕ Создать профиль" onPress={handleCreateProfile} />
+      </View>
+
+      <View style={{ marginTop: 40 }}>
+        <Button title="🚪 Выйти из аккаунта" color="#888" onPress={handleLogout} />
       </View>
     </View>
   );
@@ -124,12 +182,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
-  label: { fontSize: 16, marginBottom: 8 },
+  label: { fontSize: 16, marginTop: 10 },
   pickerWrapper: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     marginBottom: 20,
     backgroundColor: "#f2f2f2",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#aaa",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
   },
 });

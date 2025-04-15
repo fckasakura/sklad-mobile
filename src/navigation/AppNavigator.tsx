@@ -13,6 +13,9 @@ import IssueScreen from "@screens/IssueScreen";
 import SearchScreen from "@screens/SearchScreen";
 import StocksScreen from "@screens/StockScreen";
 import MovementsHistoryScreen from "../screens/MovementsHistoryScreen";
+import SelectUserScreen from "../screens/SelectUserScreen";
+import RequestItemScreen from "../screens/RequestItemScreen";
+import IssueRequestsScreen from "../screens/IssueRequestsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -47,7 +50,9 @@ export default function AppNavigator() {
 <Stack.Screen name="Issue" component={IssueScreen} />
 <Stack.Screen name="Search" component={SearchScreen} />
 <Stack.Screen name="Stocks" component={StocksScreen} />
-
+<Stack.Screen name="SelectUser" component={SelectUserScreen} />
+<Stack.Screen name="RequestItem" component={RequestItemScreen} />
+<Stack.Screen name="IssueRequests" component={IssueRequestsScreen} />
           </>
         )}
       </Stack.Navigator>

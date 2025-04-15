@@ -6,32 +6,44 @@ import {
   Button,
   StyleSheet,
   Alert,
+  ScrollView,
 } from "react-native";
 
-const BASE_URL = "https://89fe7478329a133b.mokky.dev/Users";
-
 export default function RegisterScreen({ navigation }: any) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    country: "",
+    city: "",
+    plan: "",
+  });
+
+  const handleChange = (key: string, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleRegister = async () => {
-    if (!email || !password) {
-      Alert.alert("Ошибка", "Введите все поля");
+    if (!form.email || !form.password) {
+      Alert.alert("Ошибка", "Email и пароль обязательны");
       return;
     }
 
     try {
-      const res = await fetch(BASE_URL, {
+      const res = await fetch("https://89fe7478329a133b.mokky.dev/Users", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err);
+      }
 
-      Alert.alert("Успешно", "Аккаунт создан");
+      Alert.alert("✅ Успешно", "Вы зарегистрированы!");
       navigation.replace("Login");
     } catch (err: any) {
       Alert.alert("Ошибка", err.message);
@@ -39,37 +51,46 @@ export default function RegisterScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Регистрация</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      {[
+        { label: "Имя", key: "firstName" },
+        { label: "Фамилия", key: "lastName" },
+        { label: "Email", key: "email" },
+        { label: "Пароль", key: "password" },
+        { label: "Телефон", key: "phone" },
+        { label: "Страна", key: "country" },
+        { label: "Город", key: "city" },
+        { label: "План", key: "plan" },
+      ].map((item) => (
+        <View key={item.key} style={styles.inputWrapper}>
+          <Text>{item.label}:</Text>
+          <TextInput
+            secureTextEntry={item.key === "password"}
+            style={styles.input}
+            value={(form as any)[item.key]}
+            onChangeText={(text) => handleChange(item.key, text)}
+          />
+        </View>
+      ))}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Пароль"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <Button title="Создать аккаунт" onPress={handleRegister} />
-    </View>
+      <Button title="Зарегистрироваться" onPress={handleRegister} />
+      <View style={{ marginTop: 10 }}>
+        <Button
+          title="У меня уже есть аккаунт"
+          onPress={() => navigation.replace("Login")}
+        />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 30, textAlign: "center" },
+  container: { padding: 20 },
+  inputWrapper: { marginBottom: 15 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 12,
-    marginBottom: 15,
     borderRadius: 8,
+    padding: 10,
   },
 });
