@@ -2,18 +2,17 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import EditStockItemScreen from "../screens/EditStockItemScreen";
+
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import AddItemScreen from "../screens/AddItemScreen";
 import StockItemsScreen from "../screens/StockItemsScreen";
-import MovementsScreen from "@screens/MovementsScreen";
-import IssueScreen from "@screens/IssueScreen";
-import SearchScreen from "@screens/SearchScreen";
-import StocksScreen from "@screens/StockScreen";
-import MovementsHistoryScreen from "../screens/MovementsHistoryScreen";
-import SelectUserScreen from "../screens/SelectUserScreen";
+import StockScreen from "../screens/StockScreen";
+import MovementsScreen from "../screens/MovementsScreen";
+import IssueScreen from "../screens/IssueScreen";
+import SearchScreen from "../screens/SearchScreen";
 import RequestItemScreen from "../screens/RequestItemScreen";
 import IssueRequestsScreen from "../screens/IssueRequestsScreen";
 
@@ -23,11 +22,12 @@ export default function AppNavigator() {
   const [isAuth, setIsAuth] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkToken = async () => {
       const token = await AsyncStorage.getItem("authToken");
       setIsAuth(!!token);
     };
-    checkAuth();
+
+    checkToken();
   }, []);
 
   if (isAuth === null) return null;
@@ -43,16 +43,15 @@ export default function AppNavigator() {
         ) : (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
-<Stack.Screen name="StockItems" component={StockItemsScreen} />
-<Stack.Screen name="Profile" component={ProfileScreen} />
-<Stack.Screen name="Movements" component={MovementsScreen} />
-<Stack.Screen name="MovementsHistory" component={MovementsHistoryScreen} />
-<Stack.Screen name="Issue" component={IssueScreen} />
-<Stack.Screen name="Search" component={SearchScreen} />
-<Stack.Screen name="Stocks" component={StocksScreen} />
-<Stack.Screen name="SelectUser" component={SelectUserScreen} />
-<Stack.Screen name="RequestItem" component={RequestItemScreen} />
-<Stack.Screen name="IssueRequests" component={IssueRequestsScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="AddItemScreen" component={AddItemScreen} />
+            <Stack.Screen name="StockItems" component={StockItemsScreen} />
+            <Stack.Screen name="Stock" component={StockScreen} />
+            <Stack.Screen name="Movements" component={MovementsScreen} />
+            <Stack.Screen name="Issue" component={IssueScreen} />
+            <Stack.Screen name="Search" component={SearchScreen} />
+            <Stack.Screen name="RequestItem" component={RequestItemScreen} />
+            <Stack.Screen name="IssueRequests" component={IssueRequestsScreen} />
           </>
         )}
       </Stack.Navigator>

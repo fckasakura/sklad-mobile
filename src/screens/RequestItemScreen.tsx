@@ -7,9 +7,9 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
-  Picker,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
 
 export default function RequestItemScreen({ navigation }: any) {
   const [products, setProducts] = useState<any[]>([]);
