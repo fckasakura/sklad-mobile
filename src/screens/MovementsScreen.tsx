@@ -14,8 +14,8 @@ const API_BASE = "https://89fe7478329a133b.mokky.dev";
 export default function MovementsScreen() {
   const [items, setItems] = useState<any[]>([]);
   const [stocks, setStocks] = useState<any[]>([]);
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-  const [selectedStockId, setSelectedStockId] = useState<number | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | undefined>();
+  const [selectedStockId, setSelectedStockId] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function MovementsScreen() {
       const res = await fetch(`${API_BASE}/StockItems/${selectedItemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stockId: selectedStockId }),
+        body: JSON.stringify({ stockId: Number(selectedStockId) }),
       });
 
       if (!res.ok) {
@@ -73,7 +73,7 @@ export default function MovementsScreen() {
     <View style={styles.container}>
       <Text style={styles.label}>Выберите товар:</Text>
       <Picker
-        selectedValue={selectedItemId ?? undefined}
+        selectedValue={selectedItemId}
         onValueChange={(val) => setSelectedItemId(val)}
         style={styles.picker}
       >
@@ -82,20 +82,20 @@ export default function MovementsScreen() {
           <Picker.Item
             key={item.id}
             label={`${item.name || "Без названия"} (ID ${item.id})`}
-            value={item.id}
+            value={String(item.id)}
           />
         ))}
       </Picker>
 
       <Text style={styles.label}>Куда переместить:</Text>
       <Picker
-        selectedValue={selectedStockId ?? undefined}
+        selectedValue={selectedStockId}
         onValueChange={(val) => setSelectedStockId(val)}
         style={styles.picker}
       >
         <Picker.Item label="-- Склад --" value={undefined} />
         {stocks.map((stock) => (
-          <Picker.Item key={stock.id} label={stock.name} value={stock.id} />
+          <Picker.Item key={stock.id} label={stock.name} value={String(stock.id)} />
         ))}
       </Picker>
 
