@@ -17,6 +17,7 @@ import RequestItemScreen from "../screens/RequestItemScreen";
 import IssueRequestsScreen from "../screens/IssueRequestsScreen";
 import EditStockItemScreen from "../screens/EditStockItemScreen";
 import AddStockItemScreen from "../screens/AddStockItemScreen";
+import ViewStockItemScreen from "../screens/ViewStockItemScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -55,6 +56,7 @@ export default function AppNavigator() {
             <Stack.Screen name="IssueRequests" component={IssueRequestsScreen} />
             <Stack.Screen name="EditStockItem" component={EditStockItemScreen} />
             <Stack.Screen name="AddStockItem" component={AddStockItemScreen} />
+            <Stack.Screen name="ViewStockItem" component={ViewStockItemScreen} />
           </>
         )}
       </Stack.Navigator>

@@ -37,7 +37,11 @@ export default function LoginScreen({ navigation }: any) {
 
       await AsyncStorage.setItem("authToken", "mock-token");
       await AsyncStorage.setItem("userEmail", user.email);
-      navigation.replace("Home");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Home" }],
+      });
+      
     } catch (err: any) {
       Alert.alert("Ошибка", err.message || "Произошла ошибка");
     }
